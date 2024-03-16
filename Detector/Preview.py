@@ -51,5 +51,7 @@ if __name__=="__main__":
         secax = ax.secondary_xaxis('top', functions=(lambda x: physical_constants['speed of light in vacuum'][0]/x*physical_constants['Planck constant in eV/Hz'][0]*1E9, lambda x: physical_constants['speed of light in vacuum'][0]*(physical_constants['reduced Planck constant in eV s'][0]*1E9)/x,),)
         secax.set_xlabel('E/eV')
         ax.set_xlabel('$\lambda$/nm')
-        ax.set_ylabel('QE')
+        ax.set_ylabel('QE/%')
+        ax.xaxis.set_minor_locator(MultipleLocator(10))
+        ax.yaxis.set_minor_locator(MultipleLocator(1))
         pdf.savefig(fig)
