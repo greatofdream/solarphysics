@@ -1,14 +1,19 @@
 from EnergyLoss import *
 from matplotlib.ticker import MultipleLocator
-omega_0 = 6*1e15
-lambda_0 = 3*1e8*2*np.pi/omega_0 # m
+import matplotlib.pyplot as plt
+from scipy.constants import physical_constants
+plt.style.use("../journal.mplstyle")
+omega_0, omega_0_power = 6, 15
+a0, a0_power = 23.76, 30
+g0, g0_power = 3.73, 15
+lambda_0 = 3*10**(8-omega_0_power)*2*np.pi/omega_0 # m
 lambda_beta = 5.5*1e-7 #m
 if __name__=="__main__":
     psr = argparse.ArgumentParser()
     psr.add_argument('-o', dest='opt')
     args = psr.parse_args()
     binw = 0.001
-    energys = np.arange(0.776, 10, binw)
+    energys = np.arange(0.776, 20, binw)
     energys_k = energys - m_0
     betas = np.sqrt(energys**2-m_0**2)/energys
     n_betas = 1-betas**2
@@ -28,9 +33,23 @@ if __name__=="__main__":
     dEdx = dE_ion + dE_bre + dE_che
     dx = binw/dEdx
     # calculate the photons number
-    dPhotons = 1/137.035*(1-1/n**2/betas**2)*(2*np.pi/lambda_0-2*np.pi/lambda_beta)/100
+    dPhotons = 1 / 137.035 * (1 - 1/n**2/betas**2) * (2*np.pi/lambda_0 - 2*np.pi/lambda_beta)/100
     photons = np.cumsum(dPhotons*dx)
+    # omegas - rindex
+    freq_s = np.arange(0, 10, 0.1) # 1e15s^{-1}
+    E_s = freq_s
+    rindexs = np.sqrt(1+a0/((omega_0**2-freq_s**2)+g0**2*freq_s**2/(omega_0**2-freq_s**2)))
     with PdfPages(args.opt) as pdf:
+        fig, ax = plt.subplots()
+        ax.plot(freq_s, rindexs)
+        ax.axhline(1/0.75, ls='--')
+        ax.set_xlabel('$\omega$[1E{}s'.format(15)+'$^{-1}$]')
+        secax = ax.secondary_xaxis('top', functions=(lambda x: x*physical_constants['reduced Planck constant in eV s'][0]*1E15, lambda x: x/(physical_constants['reduced Planck constant in eV s'][0]*1E15)))
+        secax.set_xlabel('E/eV')
+        ax.set_ylabel('n')
+        pdf.savefig(fig)
+        plt.close()
+
         fig, ax =plt.subplots(dpi=150)
         ax.plot(energys, dE_ion, label='Ionization')
         ax.plot(energys, dE_bre, label='Bremsstrahlung')
