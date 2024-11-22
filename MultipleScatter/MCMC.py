@@ -1,4 +1,18 @@
 import numpy as np
+from scipy.spatial.transform import Rotation
+def samplePhotonDirection(thetas, phis, cos_theta_c, n_init, N, photon_yield = 10):
+    # calculate the electron direction: e_ns
+    e_n_normal = np.zeros((N, 3))
+    e_n_normal[:, 0] = np.cos(phis)
+    e_n_normal[:, 1] = np.sin(phis)
+    e_ns = n_init * np.cos(thetas)[:, np.newaxis] + e_n_normal * np.sin(thetas)[:, np.newaxis]
+    # generate photons
+    phis_photon = np.random.rand(N * photon_yield) * np.pi
+    e_n_auxiliary = np.cross(n_init, e_n_normal)
+    photon_n_init = e_ns * cos_theta_c + e_n_auxiliary * np.sqrt(1 - cos_theta_c**2)
+    rotation = Rotation.from_rotvec(phis_photon[:, np.newaxis] * 2 * np.repeat(e_ns, photon_yield, 0))
+    photon_ns = rotation.apply(np.repeat(photon_n_init, photon_yield, 0))
+    return photon_ns
 # 采样
 def gaus_sin(x, sigma=30/180*np.pi):
     return np.exp(-x**2/2/sigma**2) * np.sin(x)
@@ -6,8 +20,9 @@ def expGaus(x, sigma=30/180*np.pi):
     return np.exp((np.cos(x)-1)/sigma**2)
 def expGaus_cos(x, sigma=30/180*np.pi):
     return np.exp((np.cos(x)-1)/sigma**2) * np.cos(x/2)
+
 def mcmc(N, distribution, wander_sigma, start_v, jump=lambda x, y: x + y):
-    # use distribution to do MCMC sample
+    # use target distribution to do MCMC sample
     wander, accept = np.random.normal(0, wander_sigma, N), np.random.rand(N)
     samples = np.zeros(N)
     samples[0] = start_v
@@ -19,6 +34,7 @@ def mcmc(N, distribution, wander_sigma, start_v, jump=lambda x, y: x + y):
         else:
             samples[i+1] = samples[i]
     return samples
+
 def mc(N, theta_e=np.pi/3, theta_c=43/180*np.pi):
     wander, accept = np.random.normal(0, 0.5, N), np.random.rand(N)
     theta_s = np.zeros(N)

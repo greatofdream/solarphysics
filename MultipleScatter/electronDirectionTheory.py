@@ -2,11 +2,10 @@
 Theory distribution of cherenkov photon
 '''
 import numpy as np
-from scipy.spatial.transform import Rotation
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 plt.style.use('../journal.mplstyle')
-from MCMC import mcmc_transfer
+from MCMC import mcmc_transfer, samplePhotonDirection
 import h5py
 import argparse
 
@@ -24,18 +23,10 @@ N = args.entries
 angle = args.angle / 180 * np.pi
 # Cerenkov angle using 42 degree
 cos_theta_c = np.cos(theta_c / 180 * np.pi)
-n_init = np.array([0, 0, 1])
 thetas, phis = np.ones(N) * angle, np.random.rand(N, 2)*np.pi
-# calculate the electron direction: e_ns
-e_n_normal = np.zeros((N, 3))
-e_n_normal[:, 0] = np.cos(phis[:, 0])
-e_n_normal[:, 1] = np.sin(phis[:, 0])
-e_ns = n_init * np.cos(thetas)[:, np.newaxis] + e_n_normal * np.sin(thetas)[:, np.newaxis]
-# generate photons direction
-e_n_auxiliary = np.cross(n_init, e_n_normal)
-photon_n_init = e_ns * cos_theta_c + e_n_auxiliary * np.sqrt(1 - cos_theta_c**2)
-rotation = Rotation.from_rotvec(phis[:, 1][:, np.newaxis]*2*e_ns)
-photon_ns = rotation.apply(photon_n_init)
+n_init = np.array([0, 0, 1])
+# ToyMC calculation
+photon_ns = samplePhotonDirection(thetas, phis[:, 1], cos_theta_c, n_init, N, 1)
 
 # theory calculation
 N_burn = 10000

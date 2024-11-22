@@ -6,8 +6,9 @@ import argparse
 from scipy.spatial.transform import Rotation
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+plt.style.use('../journal.mplstyle')
 from scipy.special import iv
-from MCMC import mcmc, gaus_sin, expGaus, expGaus_cos
+from MCMC import mcmc, gaus_sin, expGaus, expGaus_cos, samplePhotonDirection
 def rotate(v, n, phis):
     return n
 # theory calculation
@@ -18,6 +19,7 @@ def numint_expGaus(thetas):
     c_thetac_c_theta = np.cos(thetas)*cos_theta_c
     P_c_theta = np.sum(np.exp((s_theta_c_alpha+c_thetac_c_theta[:, np.newaxis])/(np.pi/6)**2)/np.sqrt(1-(s_theta_c_alpha+c_thetac_c_theta[:, np.newaxis])**2), axis=1)
     return P_c_theta, s_theta_c_alpha, c_thetac_c_theta
+
 def numint_expGaus_cos(thetas):
     alphas = np.arange(1, 10000)/10000*np.pi
     sin_theta_c = np.sqrt(1-cos_theta_c**2)
@@ -25,6 +27,7 @@ def numint_expGaus_cos(thetas):
     c_thetac_c_theta = np.cos(thetas)*cos_theta_c
     P_c_theta = np.sum(np.exp((s_theta_c_alpha+c_thetac_c_theta[:, np.newaxis])/(np.pi/6)**2)/np.sqrt((1-(s_theta_c_alpha+c_thetac_c_theta[:, np.newaxis]))/2)/2, axis=1)
     return P_c_theta, s_theta_c_alpha, c_thetac_c_theta
+
 psr = argparse.ArgumentParser()
 psr.add_argument('-i', dest='e_d', help='electron direction distribution')
 psr.add_argument('-o', dest='opt', help='output figure file')
@@ -36,45 +39,36 @@ cos_theta_c = np.cos(42/180*np.pi)
 # sample electron direction
 thetas_p = np.arange(1, 180, 0.1)/180*np.pi
 c_thetas_p = np.cos(thetas_p)
-
+dir_sigma = np.pi / 6 # consistent with the value used in expGaus
 if args.e_d == 'gaus':
     # use gaussian; without consider the boundary [0, 2pi]
     thetas = np.abs(np.random.normal(0, 30, N)) / 180 * np.pi
-    Pe_thetas_p = np.exp(-thetas_p**2/2/(np.pi/6)**2)/np.sqrt(2*np.pi)/np.pi*6 *2 # normalize, *2 is due to half axis
+    Pe_thetas_p = np.exp(-thetas_p**2/2/dir_sigma**2)/np.sqrt(2*np.pi)/np.pi*6 *2 # normalize, *2 is due to half axis
     Pe_c_thetas_p = Pe_thetas_p / np.sin(thetas_p)
     Pp_c_thetas_p, s_theta_c_alpha, c_thetac_c_theta = numint_expGaus(thetas_p)
 elif args.e_d == 'gaus_sin':
     thetas = mcmc(N + N_burn, gaus_sin, 0.5, 0, jump=lambda x, y: (x + y)%np.pi)[N_burn:]
 
 elif args.e_d == 'expGaus':
+    # sample the direction of electron used in the ToyMC
     thetas = mcmc(N + N_burn, expGaus, 0.5, 0, jump=lambda x, y: (x + y)%np.pi)[N_burn:]
-    Pe_thetas_p = np.exp((c_thetas_p-1)/(np.pi/6)**2)
+    # use numerical method to calculate the distribution
+    Pe_thetas_p = np.exp((c_thetas_p-1)/dir_sigma**2)
     Pe_thetas_p = Pe_thetas_p / np.sum(Pe_thetas_p) / (np.pi/180*0.1)
     Pe_c_thetas_p = Pe_thetas_p / np.sin(thetas_p)
     Pp_c_thetas_p, s_theta_c_alpha, c_thetac_c_theta = numint_expGaus(thetas_p)
 elif args.e_d == 'expGaus_cos':
     thetas = mcmc(N + N_burn, expGaus_cos, 0.5, 0, jump=lambda x, y: (x + y)%np.pi)[N_burn:]
-    Pe_thetas_p = np.exp((c_thetas_p-1)/(np.pi/6)**2) * np.cos(thetas_p/2)
+    Pe_thetas_p = np.exp((c_thetas_p-1)/dir_sigma**2) * np.cos(thetas_p/2)
     Pe_thetas_p = Pe_thetas_p / np.sum(Pe_thetas_p) / (np.pi/180*0.1)
     Pe_c_thetas_p = Pe_thetas_p / np.sin(thetas_p)
     Pp_c_thetas_p, s_theta_c_alpha, c_thetac_c_theta = numint_expGaus_cos(thetas_p)
-# sample phi
+
+# sample photon direction use ToyMC
 phis  = np.random.rand(N) * np.pi
 n_init = np.array([0, 0, 1])
-e_n_normal = np.zeros((N, 3))
-e_n_normal[:, 0] = np.cos(phis)
-e_n_normal[:, 1] = np.sin(phis)
-e_ns = n_init * np.cos(thetas)[:, np.newaxis] + e_n_normal * np.sin(thetas)[:, np.newaxis]
-# generate photons
-photon_yield = 10
-phis_photon = np.random.rand(N * photon_yield) * np.pi
-e_n_auxiliary = np.cross(n_init, e_n_normal)
-photon_n_init = e_ns * cos_theta_c + e_n_auxiliary * np.sqrt(1-cos_theta_c**2)
-rotation = Rotation.from_rotvec(phis_photon[:, np.newaxis] * 2 * np.repeat(e_ns, photon_yield, 0))
-photon_ns = rotation.apply(np.repeat(photon_n_init, photon_yield, 0))
+photon_ns = samplePhotonDirection(thetas, phis, cos_theta_c, n_init, N, 10)
 
-
-    
 '''
 N_theta, N_c = 18000, 4300
 e_theta_degree = np.arange(N_theta)/N_theta*180
@@ -133,8 +127,8 @@ with PdfPages(args.opt) as pdf:
     pdf.savefig(fig)
 
     fig, ax = plt.subplots()
-    ax.hist(photon_ns @ n_init, range=[-1, 1], bins=1000, histtype='step', density=True, label='photon')
-    ax.plot(c_thetas_p, Pp_c_thetas_p/np.sum(Pp_c_thetas_p)/(1000*5/6/1500)/(2/1000), label='parameterized')
+    ax.hist(photon_ns @ n_init, range=[-1, 1], bins=1000, histtype='step', density=True, label='photon(MC)')
+    ax.plot(c_thetas_p, Pp_c_thetas_p/np.sum(Pp_c_thetas_p)/(1000*5/6/1500)/(2/1000), alpha=0.6, label='photon(theory)')
     ax.legend()
     ax.set_xlabel(r'cos$\theta$')
     ax.set_ylabel('PDF')
