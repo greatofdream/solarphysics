@@ -36,11 +36,11 @@ def mc(N, theta_e=np.pi/3, theta_c=43/180*np.pi):
         else:
             theta_s[i+1] = theta_s[i]
     return theta_s
-def mcmc_transfer(N, theta_e=np.pi/3, theta_c=43/180*np.pi):
+def mcmc_transfer(N, theta_e=np.pi/3, theta_0=np.pi/3, theta_c=43/180*np.pi):
     # use mcmc sample transfer probability
     wander, accept = np.random.normal(0, 0.5, N), np.random.rand(N)
     theta_s = np.zeros(N)
-    theta_s[0] = theta_e
+    theta_s[0] = theta_0
     for i in range(N-1):
         theta_next = theta_s[i] + wander[i]
         cos_phi_n = (np.cos(theta_c)-np.cos(theta_next)*np.cos(theta_e))/np.sin(theta_next)/np.sin(theta_e)
@@ -53,6 +53,7 @@ def mcmc_transfer(N, theta_e=np.pi/3, theta_c=43/180*np.pi):
         else:
             theta_s[i+1] = theta_s[i]
     return theta_s
+
 # 按照cos采样
 def mc_c(N, theta_e=np.pi/3, theta_c=43/180*np.pi):
     wander, accept = np.random.normal(0, 0.1, N), np.random.rand(N)
