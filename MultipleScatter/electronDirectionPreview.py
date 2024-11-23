@@ -16,6 +16,7 @@ from ProcessType import G4EmProcessSubType
 from scipy.interpolate import interp1d
 from scipy.constants import physical_constants
 from Detector.Reader import SKReader
+from matplotlib.ticker import MultipleLocator
 optical_photon_pdgid = -22
 skr = SKReader()
 skr.readPMTQE('../Detector/SK/QETable.dat')
@@ -95,7 +96,7 @@ with PdfPages(args.opt+'.pdf') as pdf:
     fig, axs = plt.subplots(1, 2, figsize=(16, 6))
     h_xy = axs[0].hist2d(e_xs, e_ys, bins=[100, 100], norm=colors.LogNorm())
     fig.colorbar(h_xy[3], ax=axs[0])
-    h_rz = axs[1].hist2d(np.sqrt(e_xs**2+e_ys**2), e_zs, bins=[100, 100], norm=colors.LogNorm())
+    h_rz = axs[1].hist2d(np.sqrt(e_xs**2+e_ys**2), e_zs, bins=[100, 100], norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_rz[3], ax=axs[1])
     axs[0].set_xlabel('x/mm')
     axs[0].set_ylabel('y/mm')
@@ -107,13 +108,13 @@ with PdfPages(args.opt+'.pdf') as pdf:
     # position distribution with energy cut projection on x-y and x-z plane in steps
     # step length weighted position distribution with cut projection on x-y and x-z plane in steps
     fig, axs = plt.subplots(2, 2, figsize=(16, 12))
-    h_xy = axs[0, 0].hist2d(e_xs_cut, e_ys_cut, bins=[100, 100], norm=colors.LogNorm())
+    h_xy = axs[0, 0].hist2d(e_xs_cut, e_ys_cut, bins=[100, 100], norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_xy[3], ax=axs[0, 0])
-    h_rz = axs[0, 1].hist2d(np.sqrt(e_xs_cut**2+e_ys_cut**2), e_zs_cut, bins=[100, 100], norm=colors.LogNorm())
+    h_rz = axs[0, 1].hist2d(np.sqrt(e_xs_cut**2+e_ys_cut**2), e_zs_cut, bins=[100, 100], norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_rz[3], ax=axs[0, 1])
-    h_xy = axs[1, 0].hist2d(e_xs_cut, e_ys_cut, bins=[100, 100], weights=e_ls_cut, norm=colors.LogNorm())
+    h_xy = axs[1, 0].hist2d(e_xs_cut, e_ys_cut, bins=[100, 100], weights=e_ls_cut, norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_xy[3], ax=axs[1, 0])
-    h_rz = axs[1, 1].hist2d(e_rs_cut, e_zs_cut, bins=[100, 100], weights=e_ls_cut, norm=colors.LogNorm())
+    h_rz = axs[1, 1].hist2d(e_rs_cut, e_zs_cut, bins=[100, 100], weights=e_ls_cut, norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_rz[3], ax=axs[1,1])
     axs[0, 0].set_title('Cherenkov Energy cut')
     axs[0, 0].set_xlabel('x/mm')
@@ -160,11 +161,11 @@ with PdfPages(args.opt+'.pdf') as pdf:
 
     # step length weighted direction distribution with cut projection on x-y and x-z plane in steps
     fig, axs = plt.subplots(2, 2, figsize=(16, 12))
-    h_xy = axs[0, 0].hist2d(e_pxs_cut, e_pys_cut, bins=[100, 100], norm=colors.LogNorm())
+    h_xy = axs[0, 0].hist2d(e_pxs_cut, e_pys_cut, bins=[100, 100], norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_xy[3])
-    h_rz = axs[0, 1].hist2d(e_prs_cut, e_pzs_cut, bins=[100, 100], norm=colors.LogNorm())
+    h_rz = axs[0, 1].hist2d(e_prs_cut, e_pzs_cut, bins=[100, 100], norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_rz[3])
-    h_xy = axs[1, 0].hist2d(e_pxs_cut, e_pys_cut, bins=[100, 100], weights=e_ls_cut, norm=colors.LogNorm())
+    h_xy = axs[1, 0].hist2d(e_pxs_cut, e_pys_cut, bins=[100, 100], weights=e_ls_cut, norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_xy[3])
     h_rz = axs[1, 1].hist2d(e_prs_cut, e_pzs_cut, bins=[100, 100], weights=e_ls_cut, norm=colors.LogNorm())
     fig.colorbar(h_rz[3])
@@ -182,9 +183,9 @@ with PdfPages(args.opt+'.pdf') as pdf:
     pdf.savefig(fig)
     # no-weighted and step length weighted direction distribution with cut projection on E-theta plane in steps
     fig, axs = plt.subplots(1, 2, figsize=(16, 6))
-    h_xy = axs[0].hist2d(e_Eks_cut, 180/np.pi * e_pthetas_cut, bins=[100, 100], norm=colors.LogNorm())
+    h_xy = axs[0].hist2d(e_Eks_cut, 180/np.pi * e_pthetas_cut, bins=[100, 100], norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_xy[3], ax=axs[0])
-    h_rz = axs[1].hist2d(e_Eks_cut, 180/np.pi * e_pthetas_cut, bins=[100, 100], weights=e_ls_cut, norm=colors.LogNorm())
+    h_rz = axs[1].hist2d(e_Eks_cut, 180/np.pi * e_pthetas_cut, bins=[100, 100], weights=e_ls_cut, norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_rz[3], ax=axs[1])
     axs[0].set_xlabel('Ek/MeV')
     axs[0].set_ylabel(r'$\theta_P ^\circ$')
@@ -194,10 +195,10 @@ with PdfPages(args.opt+'.pdf') as pdf:
     pdf.savefig(fig)
 
     fig, axs = plt.subplots(1, 2, figsize=(16, 6))
-    h_xy = axs[0].hist2d(e_Eks_cut, 180/np.pi * e_pthetas_cut, bins=[100, 100])
+    h_xy = axs[0].hist2d(e_Eks_cut, 180/np.pi * e_pthetas_cut, bins=[100, 100], rasterized=True)
     fig.colorbar(h_xy[3], ax=axs[0])
     axs[0].errorbar(E_intervals[ptheta_result.index.values], ptheta_result['mean'], ptheta_result['std'])
-    h_rz = axs[1].hist2d(e_Eks_cut, 180/np.pi * e_pthetas_cut, bins=[100, 100], weights=e_ls_cut)
+    h_rz = axs[1].hist2d(e_Eks_cut, 180/np.pi * e_pthetas_cut, bins=[100, 100], weights=e_ls_cut, rasterized=True)
     fig.colorbar(h_rz[3], ax=axs[1])
     axs[1].errorbar(E_intervals[ptheta_w_result.index.values], ptheta_w_result['mean'], ptheta_w_result['std'])
     axs[0].set_xlabel('Ek/MeV')
@@ -209,9 +210,9 @@ with PdfPages(args.opt+'.pdf') as pdf:
     # theta, phi of direction distribution step 
     # Energy vs weighted r, z
     fig, axs = plt.subplots(1, 2, figsize=(16, 6))
-    h_xy = axs[0].hist2d(e_Eks_cut, e_rs_cut, bins=[100, 100], weights=e_ls_cut, norm=colors.LogNorm())
+    h_xy = axs[0].hist2d(e_Eks_cut, e_rs_cut, bins=[100, 100], weights=e_ls_cut, norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_xy[3], ax=axs[0])
-    h_rz = axs[1].hist2d(e_Eks_cut, e_zs_cut, bins=[100, 100], weights=e_ls_cut, norm=colors.LogNorm())
+    h_rz = axs[1].hist2d(e_Eks_cut, e_zs_cut, bins=[100, 100], weights=e_ls_cut, norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_rz[3], ax=axs[1])
     axs[0].set_xlabel('Ek/MeV')
     axs[0].set_ylabel('r/mm')
@@ -221,9 +222,9 @@ with PdfPages(args.opt+'.pdf') as pdf:
     pdf.savefig(fig)
     # Energy vs stepLength, dE
     fig, axs = plt.subplots(1, 2, figsize=(16, 6))
-    h_xy = axs[0].hist2d(e_Eks_cut, e_ls_cut, bins=[100, 100], norm=colors.LogNorm())
+    h_xy = axs[0].hist2d(e_Eks_cut, e_ls_cut, bins=[100, 100], norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_xy[3], ax=axs[0])
-    h_rz = axs[1].hist2d(e_Eks_cut, e_dEs_cut, bins=[100, 100], norm=colors.LogNorm())
+    h_rz = axs[1].hist2d(e_Eks_cut, e_dEs_cut, bins=[100, 100], norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_rz[3], ax=axs[1])
     axs[0].set_xlabel('Ek/MeV')
     axs[0].set_ylabel('stepLength/mm')
@@ -245,9 +246,9 @@ with PdfPages(args.opt+'.pdf') as pdf:
     pdf.savefig(fig)
     # Energy vs stepLength, dE
     fig, axs = plt.subplots(1, 2, figsize=(16, 6))
-    h_xy = axs[0].hist2d(e_Eks_cut, e_rs_cut, range=[[0, E_mc], [0, 200]], bins=[100, 100], norm=colors.LogNorm())
+    h_xy = axs[0].hist2d(e_Eks_cut, e_rs_cut, range=[[0, E_mc], [0, 200]], bins=[100, 100], norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_xy[3], ax=axs[0])
-    h_rz = axs[1].hist2d(e_rs_cut, 180/np.pi * e_pthetas_cut, weights=e_ls_cut, range=[[0, 200], [0, 180]], bins=[100, 100], norm=colors.LogNorm())
+    h_rz = axs[1].hist2d(e_rs_cut, 180/np.pi * e_pthetas_cut, weights=e_ls_cut, range=[[0, 200], [0, 180]], bins=[100, 100], norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_rz[3], ax=axs[1])
     axs[0].set_xlabel('Ek/MeV')
     axs[0].set_ylabel('r/mm')
@@ -276,7 +277,7 @@ with PdfPages(args.opt+'.pdf') as pdf:
     fig, axs = plt.subplots(1, 2, figsize=(16, 6))
     axs[0].hist(np.cos(e_pthetas_cut), weights=e_ls_cut, range=[-1, 1], bins=1000, histtype='step', label='weighted')
     axs[0].hist(np.cos(e_pthetas_cut), range=[-1, 1], bins=100, histtype='step', label='origin')
-    h_rz = axs[1].hist2d(e_rs_cut, np.cos(e_pthetas_cut), range=[[0, 200], [-1, 1]], bins=[100, 100], norm=colors.LogNorm())
+    h_rz = axs[1].hist2d(e_rs_cut, np.cos(e_pthetas_cut), range=[[0, 200], [-1, 1]], bins=[100, 100], norm=colors.LogNorm(), rasterized=True)
     fig.colorbar(h_rz[3], ax=axs[1])
     axs[0].set_xlabel(r'cos$\theta_p$')
     axs[0].set_title('weighted electron information')
@@ -344,6 +345,28 @@ with PdfPages(args.opt+'.pdf') as pdf:
     fig, ax = checkPhoton2d(gs, C_photon_E, C_photon_theta, C_photon_QE)
     pdf.savefig(fig)
 
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.hist(C_photon_theta, bins=100, range=[0, 180], histtype='step', density=True, label='origin photon')
+    ax.hist(C_photon_theta, bins=100, range=[0, 180], histtype='step', density=True, weights=C_photon_QE, label='w/ QE')
+    ax.set_xlabel(r'$\theta[^\degree]$')
+    ax.xaxis.set_major_locator(MultipleLocator(10))
+    ax.xaxis.set_minor_locator(MultipleLocator(2))
+    ax.set_xlim([0, 180])
+    ax.set_ylabel(r'PDF')
+    ax.legend()
+    pdf.savefig(fig)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.hist(np.cos(C_photon_theta /180 * np.pi), bins=100, range=[-1, 1], histtype='step', density=True, label='origin photon')
+    ax.hist(np.cos(C_photon_theta /180 * np.pi), bins=100, range=[-1, 1], histtype='step', density=True, weights=C_photon_QE, label='w/ QE')
+    ax.set_xlabel(r'$\cos{\theta}$')
+    ax.xaxis.set_major_locator(MultipleLocator(0.2))
+    ax.xaxis.set_minor_locator(MultipleLocator(0.05))
+    ax.set_xlim([-1, 1])
+    ax.set_ylabel(r'PDF')
+    ax.legend()
+    pdf.savefig(fig)
+
     # electron check
     fig = plt.figure()
     ax = fig.add_subplot(gs[1, 0])
@@ -367,7 +390,17 @@ with PdfPages(args.opt+'.pdf') as pdf:
     fig, ax = checkPhoton2d(gs, C_photon_E, C_photon_theta, C_photon_QE)
     pdf.savefig(fig)
 
-    # consider the QE efficiency
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.hist(C_photon_theta, bins=100, histtype='step', density=True, label='origin photon')
+    ax.hist(C_photon_theta, bins=100, histtype='step', density=True, weights=C_photon_QE, label='w/ QE')
+    ax.set_xlabel(r'$\theta[^\degree]$')
+    ax.xaxis.set_major_locator(MultipleLocator(10))
+    ax.xaxis.set_minor_locator(MultipleLocator(2))
+    ax.set_ylabel(r'PDF')
+    ax.legend()
+    pdf.savefig(fig)
+
+# consider the QE efficiency
     fig, ax = plt.subplots()
     ax.hist(C_photon_v, bins=100, histtype='step', density=True, label='w/o QE')
     ax.hist(C_photon_v, bins=100, histtype='step', weights=C_photon_QE, density=True, label='w/ QE')
