@@ -1,14 +1,21 @@
 import numpy as np
 from scipy.spatial.transform import Rotation
-def samplePhotonDirection(thetas, phis, cos_theta_c, n_init, N, photon_yield = 10):
+def samplePhotonDirection(thetas, phis, cos_theta_c, e_n_init, N, photon_yield = 10):
+    e_n_normal_init = np.array([0, 0, 1])
+    if np.sqrt(np.sum(np.cross(e_n_init, e_n_normal_init)**2))>0.1:
+        e_n_auxiliary = np.cross(e_n_init, e_n_normal_init)
+    else:
+        print(f'{e_n_normal_init} parrel with {e_n_init}, use [0, 1, 0] instead.')
+        e_n_normal_init = np.array([0, 1, 0])
+        e_n_auxiliary = np.cross(e_n_init, e_n_normal_init)
+
     # calculate the electron direction: e_ns
-    e_n_normal = np.zeros((N, 3))
-    e_n_normal[:, 0] = np.cos(phis)
-    e_n_normal[:, 1] = np.sin(phis)
-    e_ns = n_init * np.cos(thetas)[:, np.newaxis] + e_n_normal * np.sin(thetas)[:, np.newaxis]
+    rotation = Rotation.from_rotvec(phis[:, np.newaxis] * 2 * e_n_init)
+    e_ns_normal = rotation.apply(e_n_auxiliary)
+    e_ns = e_n_init * np.cos(thetas)[:, np.newaxis] + e_ns_normal * np.sin(thetas)[:, np.newaxis]
     # generate photons
     phis_photon = np.random.rand(N * photon_yield) * np.pi
-    e_n_auxiliary = np.cross(n_init, e_n_normal)
+    e_n_auxiliary = np.cross(e_n_init, e_ns_normal)
     photon_n_init = e_ns * cos_theta_c + e_n_auxiliary * np.sqrt(1 - cos_theta_c**2)
     rotation = Rotation.from_rotvec(phis_photon[:, np.newaxis] * 2 * np.repeat(e_ns, photon_yield, 0))
     photon_ns = rotation.apply(np.repeat(photon_n_init, photon_yield, 0))
