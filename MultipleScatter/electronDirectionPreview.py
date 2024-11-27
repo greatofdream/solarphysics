@@ -79,12 +79,12 @@ def checkPhoton2d(gs, C_photon_E, C_photon_theta, C_photon_QE=None):
     ax_histy = fig.add_subplot(gs[1, 1], sharey=ax)
     ax_histx.tick_params(axis='x', labelbottom=False)
     ax_histy.tick_params(axis='y', labelleft=False)
-    ax.hist2d(C_photon_E, C_photon_theta, bins=[100, 100], norm=colors.LogNorm())
-    ax_histx.hist(C_photon_E, bins=100, histtype='step', density=True)
-    ax_histy.hist(C_photon_theta, bins=100, histtype='step', orientation='horizontal', density=True)
+    h = ax.hist2d(C_photon_E, C_photon_theta, bins=[100, 100], norm=colors.LogNorm())
+    ax_histx.hist(C_photon_E, bins=h[1], histtype='step', density=True)
+    ax_histy.hist(C_photon_theta, bins=h[2], histtype='step', orientation='horizontal', density=True)
     if C_photon_QE is not None:
-        ax_histx.hist(C_photon_E, bins=100, histtype='step', density=True, weights=C_photon_QE)
-        ax_histy.hist(C_photon_theta, bins=100, histtype='step', orientation='horizontal', density=True, weights=C_photon_QE)
+        ax_histx.hist(C_photon_E, bins=h[1], histtype='step', density=True, weights=C_photon_QE)
+        ax_histy.hist(C_photon_theta, bins=h[2], histtype='step', orientation='horizontal', density=True, weights=C_photon_QE)
     ax.set_xlabel('E[eV]')
     ax.set_ylabel(r'$\theta[^\degree]$')
     return fig, ax
@@ -337,7 +337,8 @@ with PdfPages(args.opt+'.pdf') as pdf:
     # N, theta, E_k, parentId==0
     C_photon_E = C_photon_track[C_photon_track['ParentTrackId']==1]['E_k'] * 1E6
     C_photon_theta = 180/np.pi * np.arctan2(np.sqrt(C_photon_track[C_photon_track['ParentTrackId']==1]['Px']**2+C_photon_track[C_photon_track['ParentTrackId']==1]['Py']**2), -C_photon_track[C_photon_track['ParentTrackId']==1]['Pz']) # 和-z的夹角
-    C_photon_QE = fQE(physical_constants['speed of light in vacuum'][0]*(physical_constants['Planck constant in eV/Hz'][0]*1E9)/C_photon_E)
+    C_photon_lambda = physical_constants['speed of light in vacuum'][0]*(physical_constants['Planck constant in eV/Hz'][0]*1E9)/C_photon_E
+    C_photon_QE = fQE(C_photon_lambda)
 
     gs = fig.add_gridspec(2, 2, width_ratios=(4, 1), height_ratios=(1, 4),
         left=0.1, right=0.9, bottom=0.1, top=0.9, wspace=0.05, hspace=0.05)
@@ -352,6 +353,17 @@ with PdfPages(args.opt+'.pdf') as pdf:
     ax.xaxis.set_major_locator(MultipleLocator(10))
     ax.xaxis.set_minor_locator(MultipleLocator(2))
     ax.set_xlim([0, 180])
+    ax.set_ylabel(r'PDF')
+    ax.legend()
+    pdf.savefig(fig)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.hist(C_photon_lambda, bins=100, range=[0, 1000], histtype='step', density=True, label='origin photon')
+    ax.hist(C_photon_lambda, bins=100, range=[0, 1000], histtype='step', density=True, weights=C_photon_QE, label='w/ QE')
+    ax.set_xlabel(r'$\lambda$[nm]')
+    ax.xaxis.set_major_locator(MultipleLocator(100))
+    ax.xaxis.set_minor_locator(MultipleLocator(20))
+    ax.set_xlim([0, 1000])
     ax.set_ylabel(r'PDF')
     ax.legend()
     pdf.savefig(fig)
@@ -391,8 +403,8 @@ with PdfPages(args.opt+'.pdf') as pdf:
     pdf.savefig(fig)
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.hist(C_photon_theta, bins=100, histtype='step', density=True, label='origin photon')
-    ax.hist(C_photon_theta, bins=100, histtype='step', density=True, weights=C_photon_QE, label='w/ QE')
+    ax.hist(C_photon_theta, bins=100, range=[40, 50], histtype='step', density=True, label='origin photon')
+    ax.hist(C_photon_theta, bins=100, range=[40, 50], histtype='step', density=True, weights=C_photon_QE, label='w/ QE')
     ax.set_xlabel(r'$\theta[^\degree]$')
     ax.xaxis.set_major_locator(MultipleLocator(10))
     ax.xaxis.set_minor_locator(MultipleLocator(2))
