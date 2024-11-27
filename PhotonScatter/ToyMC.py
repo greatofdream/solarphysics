@@ -70,15 +70,13 @@ N = 1000000
 N_p = 10
 v = np.array([float(i) for i in args.vertex])
 n_v = np.array([float(i) for i in args.dir])
+n_z = np.array([0, 0, 1])
 R, halfZ = args.R, args.hz
 if args.geo == 'Tub':
     geo = Tub(R, halfZ)
 else:
     geo = Sphere(R)
 
-
-# photon emit from v[:], with uniform distribution
-photonDirGenerator = Photon()
 def scatter(geo, N, v, ps):
     px_p0, py_p0, pz_p0 = ps
     # scaterring direction
@@ -104,14 +102,29 @@ def scatter(geo, N, v, ps):
     s_theta_p = np.sqrt(1 - c_theta_p**2)
     px_v, py_v, pz_v = s_theta_p * np.cos(phi_p), s_theta_p * np.sin(phi_p), c_theta_p
 
-    photon_res = np.empty((scatterN,), dtype=[('ID', np.int32), ('x_scatter', np.float64), ('y_scatter', np.float64), ('z_scatter', np.float64), ('x', np.float64), ('y', np.float64), ('z', np.float64), ('c_theta', np.float64)])
+    photon_res = np.empty((scatterN,), dtype=[('ID', np.int32), ('x_scatter', np.float64), ('y_scatter', np.float64), ('z_scatter', np.float64), ('x', np.float64), ('y', np.float64), ('z', np.float64), ('c_theta', np.float64), ('phi', np.float64)])
     photon_res['x_scatter'] = x_p1
     photon_res['y_scatter'] = y_p1
     photon_res['z_scatter'] = z_p1
     for i in tqdm(range(scatterN)):
         p = geo.inter(np.array([x_p1[i], y_p1[i], z_p1[i]]), np.array([px_v[i], py_v[i], pz_v[i]]))
-        photon_res[i] = (i, x_p1[i], y_p1[i], z_p1[i], p[0], p[1], p[2], (p-v)@n_v/np.sqrt(np.sum((p-v)**2)))
+        photon_res[i] = (i, x_p1[i], y_p1[i], z_p1[i], p[0], p[1], p[2], (p-v)@n_z/np.sqrt(np.sum((p-v)**2)), np.arctan2(p[1], p[0]))
     return photon_res
+
+def hist2d(c_thetas, phis, c_theta_top=None, c_theta_bottom=None, edge_phis=None):
+    fig, ax = plt.subplots()
+    h = ax.hist2d(phis, c_thetas, bins=[100, 100], range=[[-np.pi, np.pi], [-1, 1]])
+    if args.geo=='Tub':
+        ax.scatter(edge_phis, c_theta_top, c='r', s=2)
+        ax.scatter(edge_phis, c_theta_bottom, c='g', s=2)
+    ax.set_ylabel(r'$\cos{\theta}$')
+    ax.set_xlabel(r'$\phi$')
+    fig.colorbar(h[3])
+    return fig, ax
+
+
+# photon emit from v[:], with uniform distribution
+photonDirGenerator = Photon()
 ## isotropic direction
 px_p0, py_p0, pz_p0 = photonDirGenerator.iso(N)
 photon_iso = scatter(geo, N, v, [px_p0, py_p0, pz_p0])
@@ -120,13 +133,25 @@ px_p0, py_p0, pz_p0 = photonDirGenerator.cerenkov(N, n_v)
 photon_cerenkov = scatter(geo, N, v, [px_p0, py_p0, pz_p0])
 
 with h5py.File(args.opt, 'w') as opt:
+    opt.attrs['v'] = v
     opt.create_dataset('iso', data=photon_iso, compression='gzip')
     opt.create_dataset('cerenkov', data=photon_cerenkov, compression='gzip')
 
-with PdfPages(args.opt+'.pdf') as pdf:
+if args.geo=='Tub':
+    edge_phis = np.arange(-1, 1, 0.01) * np.pi
+    edge_x, edge_y, top_z = np.cos(edge_phis) * R, np.sin(edge_phis) * R, halfZ
+    c_theta_top = (top_z - v[2]) / np.sqrt((edge_x - v[0]) **2 + (edge_y - v[1]) **2 + (top_z - v[2]) **2)
+    c_theta_bottom = (-top_z - v[2]) / np.sqrt((edge_x - v[0]) **2 + (edge_y - v[1]) **2 + (-top_z - v[2]) **2)
+else:
+    edge_phis, c_theta_top, c_theta_bottom = None, None, None
+
+with PdfPages(args.opt + '.pdf') as pdf:
     fig, ax = plt.subplots()
     ax.hist(photon_iso['c_theta'], bins=100, range=[-1, 1], density=True, histtype='step', label='isotropic')
     ax.hist(photon_cerenkov['c_theta'], bins=100, range=[-1, 1], density=True, histtype='step', label='cerenkov')
+    if args.geo=='Tub':
+        ax.vlines([np.min(c_theta_top), np.max(c_theta_top)], 0, 1, transform=ax.get_xaxis_transform(), ls='--', colors='r')
+        ax.vlines([np.min(c_theta_bottom), np.max(c_theta_bottom)], 0, 1, transform=ax.get_xaxis_transform(), ls='--', colors='g')
     ax.set_xlabel(r'$\cos{\theta}$')
     ax.set_ylabel('PDF')
     ax.xaxis.set_major_locator(MultipleLocator(0.2))
@@ -134,3 +159,9 @@ with PdfPages(args.opt+'.pdf') as pdf:
     ax.legend()
     pdf.savefig(fig)
  
+    fig, ax = hist2d(photon_iso['c_theta'], photon_iso['phi'], c_theta_top, c_theta_bottom, edge_phis)
+    pdf.savefig(fig)
+
+    fig, ax = hist2d(photon_cerenkov['c_theta'], photon_cerenkov['phi'], c_theta_top, c_theta_bottom, edge_phis)
+    pdf.savefig(fig)
+
