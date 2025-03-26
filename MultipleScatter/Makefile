@@ -3,6 +3,7 @@ PlayG4:=/SK/SolarNeutrino/PlayG4-build/PlayG4
 Es:=$(shell seq 4 20)
 all: $(Es:%=simulation/%_summary.h5)
 thetas:=$(shell seq 0 10 180)
+thetas_preview:=$(shell seq 0 20 180)
 theory: Theory/merge.pdf
 # theta_E.h5
 sim: $(Es:%=simulation/%MeV.h5)
@@ -28,7 +29,7 @@ theta_E.h5: $(Es:%=MC_direction/%MeV.h5)
 Theory/%.h5:
 	mkdir -p $(@D)
 	python3 electronDirectionTheory.py --angle $* -o $@
-Theory/merge.pdf: $(thetas:%=Theory/%.h5)
+Theory/merge.pdf: $(thetas_preview:%=Theory/%.h5)
 	python3 electronDirectionTheoryMerge.py -i $^ -o $@
 
 ToyMC/%.pdf:
