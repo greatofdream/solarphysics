@@ -1,5 +1,5 @@
 '''
-Theory distribution of cherenkov photon
+Theory distribution of cherenkov photon with specified electron angle
 '''
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,6 +31,7 @@ photon_ns = samplePhotonDirection(thetas, phis[:, 1], cos_theta_c, n_init, N, 1)
 # theory calculation
 N_burn = 10000
 samples = mcmc_transfer(N+N_burn, angle, np.arccos(photon_ns[0, 2]), theta_c / 180 * np.pi)
+
 with h5py.File(args.opt, 'w') as opt:
     opt.attrs['theta'] = args.angle
     opt.create_dataset('mc', data=photon_ns@n_init, compression='gzip')
