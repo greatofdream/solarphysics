@@ -35,6 +35,10 @@ Theory/merge.pdf: $(thetas_preview:%=Theory/%.h5)
 ToyMC/%.pdf:
 	mkdir -p $(@D)
 	python3 CalCherenkovDir.py -i $* -o $@
+ToyMC_int/%.pdf:
+	mkdir -p $(@D)
+	python3 CalCherenkovDir.py -i $* -o $@ --int
+
 
 .SECONDARY:
 .DELETE_ON_ERROR:

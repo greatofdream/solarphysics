@@ -28,6 +28,9 @@ def expGaus(x, sigma=30/180*np.pi):
 def expGaus_cos(x, sigma=30/180*np.pi):
     return np.exp((np.cos(x)-1)/sigma**2) * np.cos(x/2)
 
+def expGaus_sin(x, sigma=15/180*np.pi):
+    return np.exp((np.cos(x)-1)/sigma**2) * np.sin(x)
+
 def mcmc(N, distribution, wander_sigma, start_v, jump=lambda x, y: x + y):
     # use target distribution to do MCMC sample
     wander, accept = np.random.normal(0, wander_sigma, N), np.random.rand(N)
@@ -95,3 +98,4 @@ def mc_c(N, theta_e=np.pi/3, theta_c=43/180*np.pi):
         else:
             theta_s[i+1] = theta_s[i]
     return theta_s
+
